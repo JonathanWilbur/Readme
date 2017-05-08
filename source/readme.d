@@ -7,7 +7,7 @@
     License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
     Standards:
         $(LINK2 https://guides.github.com/features/mastering-markdown/, Mastering Markdown)
-    Version: 0.1.0
+    Version: 0.1.1
     See_Also:
         $(LINK2 https://en.wikipedia.org/wiki/Markdown, Wikipedia Page for Markdown)
 */
@@ -16,6 +16,8 @@
 // TODO: Strip ".md" from the end of the argument if the user appends it.
 // TODO: Support styling / color with command line options.
 
+import std.getopt;
+import std.conv : ConvException;
 import std.file : readText, exists, isFile, FileException;
 import std.stdio : write, writeln, writefln, stdout;
 import std.path : isValidFilename, isValidPath, isAbsolute, absolutePath, buildPath;
@@ -56,31 +58,75 @@ immutable string magentaBackgroundEscape = "\x1B[45m";
 immutable string cyanBackgroundEscape = "\x1B[46m";
 immutable string whiteBackgroundEscape = "\x1B[47m";
 
+bool colorOutput = false;
+bool styleOutput = false;
+bool pageOutput = false;
 
 int main (string[] args)
 {
+
+    // Retrieve and Parse Environment Variables
+    string colorOutputEnvVar = cast(string) fromStringz(getenv("COLOR"));
+    colorOutput = (colorOutputEnvVar == "true" ? true : false);
+
+    string styleOutputEnvVar = cast(string) fromStringz(getenv("STYLE"));
+    styleOutput = (styleOutputEnvVar == "true" ? true : false);
+
+    string pagerEnvVar = cast(string) fromStringz(getenv("PAGER"));
+    string pageOutputEnvVar = cast(string) fromStringz(getenv("PAGINATE"));
+    pageOutput = (pageOutputEnvVar == "true" && pagerEnvVar != "" ? true : false);
+
+    string readmePath = cast(string) fromStringz(getenv("READMEPATH"));
+
+    // Override them with command line options
+    /*
+        Potential option ideas:
+        p|path          Path
+        b|blocks        Show code blocks
+        x|section       Section
+    */
+    // NOTE: '-h' and '--help' are reserved.
+    try
+    {
+        GetoptResult getOptResult = getopt(
+            args,
+            std.getopt.config.caseInsensitive,
+            std.getopt.config.bundling,
+            "c|color", &colorOutput,
+            "p|page", &pageOutput,
+            "s|styleOutput", &styleOutput
+        );
+
+        if (getOptResult.helpWanted)
+        {
+            defaultGetoptPrinter(
+                "Usage syntax:\n\treadme [options ...] topic|program|file",
+                getOptResult.options);
+        }
+    }
+    catch (ConvException ce)
+    {
+        writeln("Command line arguments could not be parsed.");
+    }
+    catch (GetOptException goe)
+    {
+        writeln(goe.msg);
+    }
+
+    debug
+    {
+        writeln("Color Output: ", colorOutput);
+        writeln("Paginated Output: ", pageOutput);
+        writeln("Style Output: ", styleOutput);
+    }
+
     if (args.length != 2)
     {
         writeln("You must specify a document.");
         return(EXIT_FAILURE);
     }
 
-    /*
-        Environment Variables:
-        READMEPATH          The filepath where readme files can be found
-        COLOR               true or false
-        STYLE               true or false
-    */
-
-    /*
-        Command line options:
-        -c | --color                                    Support colored output
-        -C | --no-color                                 Do not support colored output
-        -p | --page | --pager | --paginate              Paginate output
-        -P | --no-page | --no-pager | --no-paginate     Do not paginate output
-        -s | --style                                    Support bold, italic, etc.
-        -S | --no-style                                 Do not support bold, italic, etc.
-    */
+    debug writeln("Opening ", args[1]);
 
     if (!isValidFilename(args[1]))
     {
@@ -91,7 +137,6 @@ int main (string[] args)
     string[] readmeDirectories = [ absolutePath(".") ];
     string readmeFile;
 
-    string readmePath = cast(string) fromStringz(getenv("MANUPATH"));
     if (readmePath) readmeDirectories ~= split(readmePath,':');
 
     foreach (dir; readmeDirectories)
@@ -173,7 +218,7 @@ int main (string[] args)
     // This is where the output begins.
 
     // Parsing States
-    // bool quoted = false;
+    bool quoted = false;
     // bool link = false;
     // bool blockquote = false;
     // bool italic = false;
