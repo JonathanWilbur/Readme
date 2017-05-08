@@ -11,11 +11,6 @@
     See_Also:
         $(LINK2 https://en.wikipedia.org/wiki/Markdown, Wikipedia Page for Markdown)
 */
-// TODO: Remove ANSI escapes when piping into less or something.
-// TODO: Alias the ANSI escapes to better names.
-// TODO: Strip ".md" from the end of the argument if the user appends it.
-// TODO: Support styling / color with command line options.
-
 import std.getopt;
 import std.conv : ConvException;
 import std.file : readText, exists, isFile, FileException;
@@ -122,9 +117,12 @@ int main (string[] args)
 
     if (args.length != 2)
     {
-        writeln("You must specify a document.");
+        writeln("You must specify a topic, program, or file to lookup.");
         return(EXIT_FAILURE);
     }
+
+    // Strip ".md" from the file if the user appended it.
+    if (args[1][$-4 .. $-1] == ".md") args[1] = args[1][0 .. $-4];
 
     debug writeln("Opening ", args[1]);
 
@@ -176,7 +174,7 @@ int main (string[] args)
     if (!readmeFile)
     {
         writeln(
-            "No matching readme / markdown pages could be found with the name: '", args[$-1], "'.\n" ~
+            "No matching readme / markdown pages could be found with the name: '", args[1], "'.\n" ~
             "Check to see that you spelled the name of the readme correctly.\n" ~
             "If you have spelled the name correctly, check the $READMEPATH environment variable.\n" ~
             "$READMEPATH should be set to a colon-delimited list of paths where readme pages can be found.\n" ~
