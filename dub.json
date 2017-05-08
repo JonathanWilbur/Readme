@@ -1,0 +1,7 @@
+{
+	"name": "readme",
+	"description": "A command line utility for reading GitHub-flavored Markdown",
+	"authors": [ "Jonathan M. Wilbur" ],
+	"license": "BSL-1.0",
+	"targetType": "library"
+}
